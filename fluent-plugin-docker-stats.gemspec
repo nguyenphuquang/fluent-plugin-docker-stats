@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "fluent-plugin-docker-stats"
-  spec.version       = "1.0.0"
+  spec.version       = "1.0.1"
   spec.authors       = ["James Ma"]
   spec.email         = ["jamesmawm@gmail.com"]
   spec.summary       = %q{Fluentd plugin to collect Docker container stats}

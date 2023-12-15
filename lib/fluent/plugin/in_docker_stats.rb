@@ -44,7 +44,6 @@ module Fluent::Plugin
     end
 
     def emit_container_stats(container_id)
-      puts "emit_container_stats: #{container_id}"
       container = Docker::Container.get(container_id)
 
       record = {
