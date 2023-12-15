@@ -3,12 +3,12 @@ lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
-  spec.name          = "fluent-plugin-docker-metrics"
-  spec.version       = "0.0.2"
-  spec.authors       = ["kiyoto"]
-  spec.email         = ["kiyoto@treasure-data.com"]
-  spec.summary       = %q{Fluentd plugin to collect Docker container metrics}
-  spec.homepage      = "https://github.com/kiyoto/fluent-plugin-docker-metrics"
+  spec.name          = "fluent-plugin-docker-stats"
+  spec.version       = "1.0.9"
+  spec.authors       = ["James Ma"]
+  spec.email         = ["jamesmawm@gmail.com"]
+  spec.summary       = %q{Fluentd plugin to collect Docker container stats}
+  spec.homepage      = "https://github.com/jamesmawm/fluent-plugin-docker-stats"
   spec.license       = "Apache License, Version 2.0"
 
   spec.files         = `git ls-files`.split($/)

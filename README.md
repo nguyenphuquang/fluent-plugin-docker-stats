@@ -1,41 +1,45 @@
-# Fluentd Docker Metrics Input Plugin
+# Fluentd Docker Stats Input Plugin
 
-This is a [Fluentd](http://www.fluentd.org) plugin to collect Docker metrics periodically.
+This is a [Fluentd](http://www.fluentd.org) plugin to collect Docker stats periodically.
+Tested with Fluentd v1.16.2-1.1 and `docker-api` 1.34.2.
 
 ## How it works
 
-It's assumed to run on the host server. It periodically runs Docker Remote API calls to fetch container IDs and looks at `/sys/fs/cgroups/<metric_type>/docker/<container_id>/`
-for relevant stats. You can say this is an implementation of the metric collection strategy outlined in [this blog post](http://blog.docker.com/2013/10/gathering-lxc-docker-containers-metrics/).
+The script connects to the Docker host using the `docker-api` SDK and periodically queries container statistics. 
+It provides insights into the resource usage, health, and other relevant information of the running Docker containers.
+
 
 ## Installing
 
-to be uploaded on Rubygems
+Make sure you have a Ruby environment. Then initialize this repo:
+
+    gem install bundle
+
+Then:
+
+    bundle install
 
 ## Example config
 
 ```
 <source>
-  type docker_metrics
-  stats_interval 1m
+  @type docker_stats
+  stats_interval 60s
+  tag docker.stats
 </source>
 ```
 
 ## Parameters
 
 * **stats_interval**: how often to poll Docker containers for stats. The default is every minute.
-* **cgroup_path**: The path to cgroups pseudofiles. The default is `sys/fs/cgroup`.
-* **tag_prefix**: The tag prefix. The default value is "docker"
+* **tag**: The tag for the input source. The default value is "docker
+* **container_ids**: A list of container IDs for reading stats. The default value is empty, which will fetch stats for all containers.
 
 ## Example output
 
 ```
-2014-11-22 17:48:26 +0000 docker.blkio.io_queued: {"key":"blkio_io_queued_total","value":0,"type":"counter","hostname":"precise64","id":"24f5fb3bfc429e88aa3dbacd704667899dc496067cedcfa58dd84da42e7cb3cf","name":"/world"}
-2014-11-22 17:48:26 +0000 docker.blkio.sectors: {"key":"blkio_sectors","value":136,"type":"counter","hostname":"precise64","id":"24f5fb3bfc429e88aa3dbacd704667899dc496067cedcfa58dd84da42e7cb3cf","name":"/world"}
+2023-12-15 09:49:12.530109174 +0000 docker.stats: {"container_id":"e59768d2f1cc8448cc1e609324cdddf70e8e26557bfe307a0887d11ec2132af3","container_name":"mysql","created_time":"2023-07-26T01:39:21.286462238Z","status":"running","is_runn
+ing":true,"is_restarting":false,"is_paused":false,"is_oom_killed":false,"started_time":"2023-12-15T00:56:28.701735927Z","finished_time":"2023-12-15T00:56:24.669503934Z","mem_usage":264130560,"mem_limit":33356099584,"mem_max_usage":266227712,"cpu_system_usage":346646650000000,"cpu_total_usage":16206423900,"cpu_percent":0.004675199918995323,"networks":[{"network_name":"eth0","rx":2110,"tx":0}]}
 ```
 
-In particular, each event is a key-value pair of individual metrics. Also, it has
-
-- `hostname` is the hostname of the Docker host
-- `id` is the ID of the container
-- `name` is the descriptive name of the container (a la `docker inspect --format '{{ .Names }}'`)
 
