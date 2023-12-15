@@ -19,6 +19,11 @@ Then:
 
     bundle install
 
+Alternatively, if you wish to just use the gem in a script, you can run:
+
+    gem install fluent-plugin-docker-stats
+
+
 ## Example config
 
 ```
