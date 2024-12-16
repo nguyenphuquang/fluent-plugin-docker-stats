@@ -9,12 +9,14 @@ module Fluent::Plugin
 
     config_param :stats_interval, :string, :default => "60s"
     config_param :tag, :string, :default => "docker"
-    config_param :container_ids, :array, :default => nil # mainly for testing
+    # config_param :container_ids, :array, :default => nil # mainly for testing
+    config_param :container_regex, :string, :default => nil # mainly for testing
 
     def initialize
       super
       puts "Found Docker details: #{Docker.version}"
       puts "Using interval: #{@stats_interval}"
+      puts "Container Regex: #{@container_regex}"
       puts "Using tag: #{@tag}"
     end
 
@@ -37,7 +39,7 @@ module Fluent::Plugin
     end
 
     def get_metrics
-      ids = @container_ids || list_container_ids
+      ids = list_container_ids
       ids.each do |container_id|
         emit_container_stats(container_id)
       end
@@ -45,6 +47,10 @@ module Fluent::Plugin
 
     def emit_container_stats(container_id)
       container = Docker::Container.get(container_id)
+      puts "Processing container: #{container.info['Name']}"
+      if @container_regex && !container.info['Name'].match(@container_regex)
+        return
+      end
 
       record = {
         "container_id": container_id,
