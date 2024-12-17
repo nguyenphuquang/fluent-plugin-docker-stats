@@ -58,13 +58,14 @@ module Fluent::Plugin
 
     def emit_container_up_down(container)
       container_name = container.info['Name']
+      state = container.info['State']
       record = {
         "type": "alert",
         "container_id": container.id,
         "container_name": container_name,
         "host_ip": ENV['HOST_IP'],
         "created_time": container.info["Created"],
-        "status": state['State']['Status']
+        "status": state['Status']
       }
       router.emit(@tag, Fluent::Engine.now, record)
     end
