@@ -12,10 +12,9 @@ module Fluent::Plugin
     # config_param :container_ids, :array, :default => nil # mainly for testing
     config_param :container_regex, :string, :default => nil # mainly for testing
 
-    last_stats = {}
-
     def initialize
       super
+      @last_stats = {}
       puts "Found Docker details: #{Docker.version}"
       puts "Using interval: #{@stats_interval}"
       puts "Container Regex: #{@container_regex}"
@@ -47,12 +46,12 @@ module Fluent::Plugin
       # end
       Docker::Container.all(all: true).each do |container|
         name = container.info['Name']
-        if last_stats.include?(name)
-          if last_stats[name] != container.status
+        if @last_stats.include?(name)
+          if @last_stats[name] != container.status
             emit_container_up_down(container, container.status)
           end
         end
-        last_stats[name] = container.status
+        @last_stats[name] = container.status
 
         emit_container_stats(container.id)
       end
