@@ -40,6 +40,7 @@ module Fluent::Plugin
     end
 
     def get_metrics
+      es = MultiEventStream.new
       Docker::Container.all(all: true).each do |container|
         container_detail = Docker::Container.get(container.id, all: true)
         name = container_detail.info['Name']
@@ -47,16 +48,15 @@ module Fluent::Plugin
         status = current_state['Status']
         if @last_stats.include?(name)
           if @last_stats[name] != status
-            emit_container_up_down(container_detail)
+            emit_container_up_down(container_detail, es)
           end
         end
         @last_stats[name] = status
         puts "last stats: #{@last_stats.inspect}"
 
-        es = MultiEventStream.new
         emit_container_stats(container_detail, es)
-        router.emit_stream(@tag, es)
       end
+      router.emit_stream(@tag, es)
     end
 
     def emit_container_up_down(container, es)
@@ -179,14 +179,8 @@ module Fluent::Plugin
       # Convert symbol keys to strings to ensure consistent format
       record = Hash[record.map { |k, v| [k.to_s, v] }]
 
-      tag = @tag
       time = Fluent::Engine.now
-      begin
-        es.add(time, record)
-      rescue => e
-        puts "Error emitting event for #{record['container_name']}: #{e.message}"
-        puts e.backtrace.join("\n")
-      end
+      es.add(time, record)
 
     end
 
