@@ -46,19 +46,20 @@ module Fluent::Plugin
       # end
       Docker::Container.all(all: true).each do |container|
         name = container.info['Name']
+        current_state = container.info['State']
+        status = current_state['Status']
         if @last_stats.include?(name)
-          if @last_stats[name] != container.status
-            emit_container_up_down(container, container.status)
+          if @last_stats[name] != status
+            emit_container_up_down(container)
           end
         end
-        @last_stats[name] = container.status
+        @last_stats[name] = status
 
         emit_container_stats(container.id)
       end
     end
 
-    def emit_container_up_down(container)
-      state = container.info['State']
+    def emit_container_up_down(container, state)
       record = {
         "type": "alert",
         "container_id": container.id,
