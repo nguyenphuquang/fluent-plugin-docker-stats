@@ -41,28 +41,30 @@ module Fluent::Plugin
 
     def get_metrics
       Docker::Container.all(all: true).each do |container|
-        name = container.info['Name']
-        current_state = container.info['State']
+        container_detail = Docker::Container.get(container.id)
+        name = container_detail.info['Name']
+        current_state = container_detail.info['State']
         status = current_state['Status']
         if @last_stats.include?(name)
           if @last_stats[name] != status
-            emit_container_up_down(container)
+            emit_container_up_down(container_detail)
           end
         end
         @last_stats[name] = status
 
-        emit_container_stats(container)
+        emit_container_stats(container_detail)
       end
     end
 
-    def emit_container_up_down(container, state)
+    def emit_container_up_down(container)
+      container_name = container.info['Name']
       record = {
         "type": "alert",
         "container_id": container.id,
-        "container_name": container.info['Name'].sub(/^\//, ''),
+        "container_name": container_name,
         "host_ip": ENV['HOST_IP'],
         "created_time": container.info["Created"],
-        "status": state['Status']
+        "status": state['State']['Status']
       }
       router.emit(@tag, Fluent::Engine.now, record)
     end
