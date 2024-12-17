@@ -47,7 +47,7 @@ module Fluent::Plugin
       # end
       Docker::Container.all(all: true).each do |container|
         name = container.info['Name']
-        if name in last_stats
+        if last_stats.include?(name)
           if last_stats[name] != container.status
             emit_container_up_down(container, container.status)
           end
