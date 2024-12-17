@@ -12,6 +12,8 @@ module Fluent::Plugin
     # config_param :container_ids, :array, :default => nil # mainly for testing
     config_param :container_regex, :string, :default => nil # mainly for testing
 
+    last_stats = {}
+
     def initialize
       super
       puts "Found Docker details: #{Docker.version}"
@@ -39,10 +41,34 @@ module Fluent::Plugin
     end
 
     def get_metrics
-      ids = list_container_ids
-      ids.each do |container_id|
-        emit_container_stats(container_id)
+      # ids = list_container_ids
+      # ids.each do |container_id|
+      #   emit_container_stats(container_id)
+      # end
+      Docker::Container.all(all: true).each do |container|
+        name = container.info['Name']
+        if name in last_stats
+          if last_stats[name] != container.status
+            emit_container_up_down(container, container.status)
+          end
+        end
+        last_stats[name] = container.status
+
+        emit_container_stats(container.id)
       end
+    end
+
+    def emit_container_up_down(container)
+      state = container.info['State']
+      record = {
+        "type": "alert",
+        "container_id": container.id,
+        "container_name": container.info['Name'].sub(/^\//, ''),
+        "host_ip": container.json['NetworkSettings']['Networks'].values.first['IPAddress'],
+        "created_time": container.info["Created"]
+        "status": state['Status']
+      }
+      router.emit(@tag, Fluent::Engine.now, record)
     end
 
     def emit_container_stats(container_id)
@@ -54,6 +80,8 @@ module Fluent::Plugin
 
       record = {
         "container_id": container_id,
+        # "host_ip": container.info['NetworkSettings']['IPAddress'],
+        "host_ip": container.json['NetworkSettings']['Networks'].values.first['IPAddress'],
         "container_name": container.info['Name'].sub(/^\//, ''),
         "created_time": container.info["Created"]
       }
@@ -112,7 +140,8 @@ module Fluent::Plugin
     end
 
     def list_container_ids
-      Docker::Container.all.map do |container|
+      # List all containers including stopped ones
+      Docker::Container.all().map do |container|
         container.id
       end
     end
