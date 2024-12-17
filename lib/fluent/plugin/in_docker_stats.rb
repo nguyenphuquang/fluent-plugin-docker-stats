@@ -146,7 +146,7 @@ module Fluent::Plugin
         end
       end
 
-      puts "Emit stats for #{container_name}"
+      puts "Emit stats for #{container_name} #{record.inspect}"
       router.emit(@tag, Fluent::Engine.now, record)
     end
 
