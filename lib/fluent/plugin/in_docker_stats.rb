@@ -68,9 +68,10 @@ module Fluent::Plugin
     end
 
     def emit_container_stats(container)
-      container_name = container.info['Name']
+      container_name = container.info['Name'] || container.info['Names']?[0]
       puts "Processing container: #{container_name || 'UNNAMED'} (ID: #{container.id})"
       puts "Container info: #{container.info.inspect}"
+      puts "Container info full: #{container.info}"
       
       # Skip containers without names
       if container_name.nil?
