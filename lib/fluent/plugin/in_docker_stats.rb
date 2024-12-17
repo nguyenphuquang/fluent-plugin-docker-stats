@@ -167,8 +167,31 @@ module Fluent::Plugin
         record["networks"] = []
       end
 
-      puts "Emit stats for #{container_name} #{record.inspect}"
-      router.emit(@tag, Fluent::Engine.now, record)
+      # Ensure all values in record are properly formatted
+      record.each do |k, v|
+        if v.nil?
+          record[k] = ""  # Convert nil to empty string
+        end
+      end
+
+      # Convert symbol keys to strings to ensure consistent format
+      record = Hash[record.map { |k, v| [k.to_s, v] }]
+
+      tag = "#{@tag}.#{record['container_name'].gsub('/', '.')}"
+      time = Fluent::Engine.now
+      
+      puts "Emitting event:"
+      puts "  Tag: #{tag}"
+      puts "  Time: #{time}"
+      puts "  Record: #{record.inspect}"
+      
+      begin
+        router.emit(tag, time, record)
+        puts "Successfully emitted event for #{record['container_name']}"
+      rescue => e
+        puts "Error emitting event for #{record['container_name']}: #{e.message}"
+        puts e.backtrace.join("\n")
+      end
     end
 
     def list_container_ids
