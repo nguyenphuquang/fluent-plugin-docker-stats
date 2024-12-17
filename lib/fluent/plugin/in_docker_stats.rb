@@ -68,16 +68,24 @@ module Fluent::Plugin
     end
 
     def emit_container_stats(container)
-      puts "Processing container: #{container.info['Name']}"
-      if @container_regex && !container.info['Name'].match(@container_regex)
+      container_name = container.info['Name']
+      puts "Processing container: #{container_name || 'UNNAMED'} (ID: #{container.id})"
+      puts "Container info: #{container.info.inspect}"
+      
+      # Skip containers without names
+      if container_name.nil?
+        puts "Skipping container #{container.id} due to missing name"
+        return
+      end
+
+      if @container_regex && !container_name.match(@container_regex)
         return
       end
 
       record = {
         "container_id": container.id,
-        # "host_ip": container.info['NetworkSettings']['IPAddress'],
         "host_ip": ENV['HOST_IP'],
-        "container_name": container.info['Name'].sub(/^\//, ''),
+        "container_name": container_name.sub(/^\//, ''),
         "created_time": container.info["Created"]
       }
 
