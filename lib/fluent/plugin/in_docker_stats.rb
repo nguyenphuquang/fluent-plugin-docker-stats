@@ -64,7 +64,7 @@ module Fluent::Plugin
         "type": "alert",
         "container_id": container.id,
         "container_name": container.info['Name'].sub(/^\//, ''),
-        "host_ip": container.json['NetworkSettings']['Networks'].values.first['IPAddress'],
+        "host_ip": ENV['HOST_IP'],
         "created_time": container.info["Created"],
         "status": state['Status']
       }
@@ -81,7 +81,7 @@ module Fluent::Plugin
       record = {
         "container_id": container_id,
         # "host_ip": container.info['NetworkSettings']['IPAddress'],
-        "host_ip": container.json['NetworkSettings']['Networks'].values.first['IPAddress'],
+        "host_ip": ENV['HOST_IP'],
         "container_name": container.info['Name'].sub(/^\//, ''),
         "created_time": container.info["Created"]
       }
