@@ -53,11 +53,13 @@ module Fluent::Plugin
         @last_stats[name] = status
         puts "last stats: #{@last_stats.inspect}"
 
-        emit_container_stats(container_detail)
+        es = MultiEventStream.new
+        emit_container_stats(container_detail, es)
+        router.emit_stream(@tag, es)
       end
     end
 
-    def emit_container_up_down(container)
+    def emit_container_up_down(container, es)
       container_name = container.info['Name']
       state = container.info['State']
       record = {
@@ -68,10 +70,10 @@ module Fluent::Plugin
         "created_time": container.info["Created"],
         "status": state['Status']
       }
-      router.emit(@tag, Fluent::Engine.now, record)
+      es.add(Fluent::Engine.now, record)
     end
 
-    def emit_container_stats(container)
+    def emit_container_stats(container, es)
       container_name = container.info['Name']
       puts "Processing container: #{container_name || 'UNNAMED'} (ID: #{container.id})"
       
@@ -177,21 +179,15 @@ module Fluent::Plugin
       # Convert symbol keys to strings to ensure consistent format
       record = Hash[record.map { |k, v| [k.to_s, v] }]
 
-      tag = "#{@tag}.#{record['container_name'].gsub('/', '.')}"
+      tag = @tag
       time = Fluent::Engine.now
-      
-      puts "Emitting event:"
-      puts "  Tag: #{tag}"
-      puts "  Time: #{time}"
-      puts "  Record: #{record.inspect}"
-      
       begin
-        router.emit(tag, time, record)
-        puts "Successfully emitted event for #{record['container_name']}"
+        es.add(time, record)
       rescue => e
         puts "Error emitting event for #{record['container_name']}: #{e.message}"
         puts e.backtrace.join("\n")
       end
+
     end
 
     def list_container_ids
