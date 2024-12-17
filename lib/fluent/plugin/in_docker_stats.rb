@@ -40,10 +40,6 @@ module Fluent::Plugin
     end
 
     def get_metrics
-      # ids = list_container_ids
-      # ids.each do |container_id|
-      #   emit_container_stats(container_id)
-      # end
       Docker::Container.all(all: true).each do |container|
         name = container.info['Name']
         current_state = container.info['State']
@@ -55,7 +51,7 @@ module Fluent::Plugin
         end
         @last_stats[name] = status
 
-        emit_container_stats(container.id)
+        emit_container_stats(container)
       end
     end
 
@@ -71,15 +67,14 @@ module Fluent::Plugin
       router.emit(@tag, Fluent::Engine.now, record)
     end
 
-    def emit_container_stats(container_id)
-      container = Docker::Container.get(container_id)
+    def emit_container_stats(container)
       puts "Processing container: #{container.info['Name']}"
       if @container_regex && !container.info['Name'].match(@container_regex)
         return
       end
 
       record = {
-        "container_id": container_id,
+        "container_id": container.id,
         # "host_ip": container.info['NetworkSettings']['IPAddress'],
         "host_ip": ENV['HOST_IP'],
         "container_name": container.info['Name'].sub(/^\//, ''),
