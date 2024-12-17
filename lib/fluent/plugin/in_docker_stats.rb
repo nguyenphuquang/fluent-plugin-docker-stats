@@ -65,7 +65,7 @@ module Fluent::Plugin
         "container_id": container.id,
         "container_name": container.info['Name'].sub(/^\//, ''),
         "host_ip": container.json['NetworkSettings']['Networks'].values.first['IPAddress'],
-        "created_time": container.info["Created"]
+        "created_time": container.info["Created"],
         "status": state['Status']
       }
       router.emit(@tag, Fluent::Engine.now, record)
