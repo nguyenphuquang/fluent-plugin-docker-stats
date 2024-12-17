@@ -74,7 +74,6 @@ module Fluent::Plugin
     def emit_container_stats(container)
       container_name = container.info['Name']
       puts "Processing container: #{container_name || 'UNNAMED'} (ID: #{container.id})"
-      # puts "Container info: #{container.info.inspect}"
       
       # Skip containers without names
       if container_name.nil?
@@ -87,63 +86,85 @@ module Fluent::Plugin
         return
       end
 
+      state = container.info['State']
       record = {
         "container_id": container.id,
         "host_ip": ENV['HOST_IP'],
-        "container_name": container_name.sub(/^\//, ''),
-        "created_time": container.info["Created"]
+        "container_name": container_name,
+        "created_time": container.info["Created"],
+        "status": state['Status'],
+        "is_running": state['Running'],
+        "is_restarting": state['Restarting'],
+        "is_paused": state['Paused'],
+        "is_oom_killed": state['OOMKilled'],
+        "started_time": state['StartedAt'],
+        "finished_time": state['FinishedAt']
       }
 
-      state = container.info['State']
-      record["status"] = state['Status']
-      record["is_running"] = state['Running']
-      record["is_restarting"] = state['Restarting']
-      record["is_paused"] = state['Paused']
-      record["is_oom_killed"] = state['OOMKilled']
-      record["started_time"] = state['StartedAt']
-      record["finished_time"] = state['FinishedAt']
+      # Only collect detailed stats for running containers
+      if state['Running']
+        begin
+          stats = container.stats(stream: false)
+          
+          if stats && stats['memory_stats']
+            memory_stats = stats['memory_stats']
+            record["mem_usage"] = memory_stats['usage'] || 0
+            record["mem_limit"] = memory_stats['limit'] || 0
+            record["mem_max_usage"] = memory_stats['max_usage'] || 0
+          end
 
-      stats = container.stats(stream: false)
+          if stats && stats['cpu_stats']
+            cpu_stats = stats['cpu_stats']
+            cpu_usage = cpu_stats['cpu_usage']
+            cpu_system_usage = cpu_stats['system_cpu_usage']
+            
+            if cpu_usage && cpu_system_usage && cpu_system_usage > 0
+              cpu_total_usage = cpu_usage['total_usage'] || 0
+              cpu_percent = (cpu_total_usage.to_f / cpu_system_usage.to_f) * 100
+              record["cpu_system_usage"] = cpu_system_usage
+              record["cpu_total_usage"] = cpu_total_usage
+              record["cpu_percent"] = cpu_percent
+            else
+              record["cpu_system_usage"] = 0
+              record["cpu_total_usage"] = 0
+              record["cpu_percent"] = 0.0
+            end
+          end
 
-      memory_stats = stats['memory_stats']
-      record["mem_usage"] = memory_stats['usage']
-      record["mem_limit"] = memory_stats['limit']
-      record["mem_max_usage"] = memory_stats['max_usage']
+          record["networks"] = []
+          if stats && stats['networks']
+            stats['networks'].each do |network_name, network_info|
+              record["networks"] << {
+                "network_name": network_name,
+                "rx": network_info['rx_bytes'] || 0,
+                "tx": network_info['tx_bytes'] || 0
+              }
+            end
+          end
 
-      cpu_stats, = stats['cpu_stats']
-      cpu_usage = cpu_stats['cpu_usage']
-
-      cpu_system_usage = cpu_stats['system_cpu_usage']
-      cpu_total_usage = cpu_usage['total_usage']
-      cpu_percent = (cpu_total_usage.to_f / cpu_system_usage.to_f) * 100
-
-      record["cpu_system_usage"] = cpu_system_usage
-      record["cpu_total_usage"] = cpu_total_usage
-      record["cpu_percent"] = cpu_percent
-
-      record["networks"] = []
-      if stats['networks']
-        stats['networks'].each do |network_name, network_info|
-          record["networks"] << {
-            "network_name": network_name,
-            "rx": network_info['rx_bytes'],
-            "tx": network_info['tx_bytes'],
-          }
+          if stats && stats['storage_stats']
+            storage_stats = stats['storage_stats']
+            if storage_stats['read_count']
+              record["storage"] = {
+                "read_count": storage_stats['read_count'],
+                "read_size": storage_stats['read_size_bytes'],
+                "write_count": storage_stats['write_count'],
+                "write_size": storage_stats['write_size_bytes']
+              }
+            end
+          end
+        rescue => e
+          puts "Error collecting stats for container #{container_name}: #{e.message}"
         end
-      end
-
-      storage_stats = stats['storage_stats']
-      if stats['storage_stats'] && !stats['storage_stats'].empty?
-        record["volumes"] = []
-        volume_stats = storage_stats['volumes']
-        volume_stats.each do |volume_name, volume_info|
-          puts "Volume #{volume_name} - Used: #{volume_info['used']} bytes, Total: #{volume_info['total']} bytes"
-          record["volumes"] << {
-            "volume_name": volume_name,
-            "volume_used": volume_info['used'],
-            "volume_total": volume_info['total'],
-          }
-        end
+      else
+        # Set default values for non-running containers
+        record["mem_usage"] = 0
+        record["mem_limit"] = 0
+        record["mem_max_usage"] = 0
+        record["cpu_system_usage"] = 0
+        record["cpu_total_usage"] = 0
+        record["cpu_percent"] = 0.0
+        record["networks"] = []
       end
 
       puts "Emit stats for #{container_name} #{record.inspect}"
