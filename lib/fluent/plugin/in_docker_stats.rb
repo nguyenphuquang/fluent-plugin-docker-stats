@@ -74,7 +74,7 @@ module Fluent::Plugin
     def emit_container_stats(container)
       container_name = container.info['Name']
       puts "Processing container: #{container_name || 'UNNAMED'} (ID: #{container.id})"
-      puts "Container info: #{container.info.inspect}"
+      # puts "Container info: #{container.info.inspect}"
       
       # Skip containers without names
       if container_name.nil?
@@ -83,6 +83,7 @@ module Fluent::Plugin
       end
 
       if @container_regex && !container_name.match(@container_regex)
+        puts "Skipping container #{container_name} dont match regex"
         return
       end
 
@@ -145,6 +146,7 @@ module Fluent::Plugin
         end
       end
 
+      puts "Emit stats for #{container_name}"
       router.emit(@tag, Fluent::Engine.now, record)
     end
 
