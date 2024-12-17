@@ -41,7 +41,7 @@ module Fluent::Plugin
 
     def get_metrics
       Docker::Container.all(all: true).each do |container|
-        container_detail = Docker::Container.get(container.id)
+        container_detail = Docker::Container.get(container.id, all: true)
         name = container_detail.info['Name']
         current_state = container_detail.info['State']
         status = current_state['Status']
@@ -121,7 +121,7 @@ module Fluent::Plugin
       record["cpu_percent"] = cpu_percent
 
       record["networks"] = []
-      stats['networks'].each do |network_name, network_info|
+      stats['networks']?.each do |network_name, network_info|
         record["networks"] << {
           "network_name": network_name,
           "rx": network_info['rx_bytes'],
