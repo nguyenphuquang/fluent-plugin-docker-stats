@@ -51,6 +51,7 @@ module Fluent::Plugin
           end
         end
         @last_stats[name] = status
+        puts "last stats: #{@last_stats.inspect}"
 
         emit_container_stats(container_detail)
       end
@@ -74,7 +75,6 @@ module Fluent::Plugin
       container_name = container.info['Name']
       puts "Processing container: #{container_name || 'UNNAMED'} (ID: #{container.id})"
       puts "Container info: #{container.info.inspect}"
-      puts "Container info full: #{container.info}"
       
       # Skip containers without names
       if container_name.nil?
