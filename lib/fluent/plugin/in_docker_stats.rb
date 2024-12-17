@@ -121,12 +121,14 @@ module Fluent::Plugin
       record["cpu_percent"] = cpu_percent
 
       record["networks"] = []
-      stats['networks']?.each do |network_name, network_info|
-        record["networks"] << {
-          "network_name": network_name,
-          "rx": network_info['rx_bytes'],
-          "tx": network_info['tx_bytes'],
-        }
+      if stats['networks']
+        stats['networks'].each do |network_name, network_info|
+          record["networks"] << {
+            "network_name": network_name,
+            "rx": network_info['rx_bytes'],
+            "tx": network_info['tx_bytes'],
+          }
+        end
       end
 
       storage_stats = stats['storage_stats']
