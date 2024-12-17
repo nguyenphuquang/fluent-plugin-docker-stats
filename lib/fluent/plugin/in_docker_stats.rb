@@ -65,6 +65,7 @@ module Fluent::Plugin
       record = {
         "type": "alert",
         "container_id": container.id,
+        "message": "Container #{container_name} is #{state['Status']}",
         "container_name": container_name,
         "host_ip": ENV['HOST_IP'],
         "created_time": container.info["Created"],
