@@ -40,7 +40,7 @@ module Fluent::Plugin
     end
 
     def get_metrics
-      es = MultiEventStream.new
+      es = Fluent::MultiEventStream.new
       Docker::Container.all(all: true).each do |container|
         container_detail = Docker::Container.get(container.id, all: true)
         name = container_detail.info['Name']
