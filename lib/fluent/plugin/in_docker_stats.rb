@@ -92,6 +92,7 @@ module Fluent::Plugin
       state = container.info['State']
       record = {
         "container_id": container.id,
+        "message": "Container #{container_name} is #{state['Status']}",
         "host_ip": ENV['HOST_IP'],
         "container_name": container_name,
         "created_time": container.info["Created"],
@@ -148,11 +149,18 @@ module Fluent::Plugin
           if stats && stats['storage_stats']
             storage_stats = stats['storage_stats']
             if storage_stats['read_count']
+              total_size = storage_stats['total_size_bytes'] || 0
+              used_size = storage_stats['used_size_bytes'] || 0
+              disk_percent = total_size > 0 ? (used_size.to_f / total_size.to_f) * 100 : 0.0
+              
               record["storage"] = {
                 "read_count": storage_stats['read_count'],
                 "read_size": storage_stats['read_size_bytes'],
                 "write_count": storage_stats['write_count'],
-                "write_size": storage_stats['write_size_bytes']
+                "write_size": storage_stats['write_size_bytes'],
+                "total_size": total_size,
+                "used_size": used_size,
+                "disk_percent": disk_percent.round(2)
               }
             end
           end
